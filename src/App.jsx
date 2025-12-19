@@ -17,7 +17,6 @@ import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc
 
 /**
  * 1. Firebase 設定
- * 這邊直接填入您的專案設定，確保部署後也能連線
  */
 const firebaseConfig = {
   apiKey: "AIzaSyBHD_CMQpyO_CDq_trAnvIvv2MRJd0MwkA",
@@ -34,7 +33,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 嘗試初始化 Analytics (在某些阻擋 Cookie 的環境下可能會失敗，故加 try-catch)
+// 嘗試初始化 Analytics
 let analytics;
 try {
   if (typeof window !== 'undefined') {
@@ -57,13 +56,12 @@ const GlobalStyle = () => (
       font-family: 'jf-openhuninn-2.0', sans-serif !important;
       margin: 0;
       padding: 0;
-      background-color: #e2e8f0; /* 電腦版背景色 (淺灰) */
+      background-color: #cbd5e1; /* 加深背景色讓 App 更突出 */
       display: flex;
       justify-content: center;
       min-height: 100vh;
     }
 
-    /* 雪花動畫 */
     @keyframes snowfall {
       0% { transform: translateY(-10vh) translateX(-10px) rotate(0deg); opacity: 0; }
       20% { opacity: 1; }
@@ -102,7 +100,7 @@ const SnowBackground = () => {
 };
 
 // ... Constants ...
-const JMA_FORECAST_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/040000.json'; // 仙台 (宮城)
+const JMA_FORECAST_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/040000.json'; 
 const JMA_WEATHER_PAGE_URL = 'https://www.jma.go.jp/bosai/forecast/#/area_type/offices/area_code/040000';
 const CURRENCY_SEARCH_URL = 'https://www.google.com/search?q=JPY+to+TWD';
 
@@ -125,38 +123,38 @@ const getJmaWeatherStatus = (code) => {
 
 // ... Seed Data ...
 const SEED_ITINERARY = [
-    { day: 1, time: '13:30', title: '仙台機場', type: 'transport', duration: '40分', desc: '抵達仙台機場 ✈️，搭乘仙台機場 Access 線 🚆 前往仙台車站。', badge: '抵達' },
-    { day: 1, time: '15:00', title: '里士滿仙台站前高級酒店', type: 'stay', duration: '', desc: 'Richmond Hotel Premier 🏨。就在仙台車站對面，交通超方便 ✨，先去放行李 🧳。', badge: '入住' },
-    { day: 1, time: '17:30', title: '仙台善治郎牛舌專賣', type: 'food', duration: '1小時 30分', desc: '仙台名物！極厚切牛舌定食 🐮，這家是當地人也推薦的名店 👍，就在車站三樓。', badge: '必吃' },
-    { day: 1, time: '19:30', title: '唐吉訶德 仙台車站西口 本店', type: 'shopping', duration: '2小時', desc: '就在商店街入口附近 🛍️，24小時營業 🕒，藥妝零食補貨好地方 🐧。', badge: '購物' },
-    { day: 2, time: '09:30', title: '宮城藏王狐狸村', type: 'sightseeing', duration: '2小時', desc: '在雪地裡看毛茸茸的狐狸群 🦊，非常療癒！記得注意隨身物品 ⚠️。', badge: '拍照重點' },
-    { day: 2, time: '13:00', title: '藏王纜車山麓站', type: 'sightseeing', duration: '2小時', desc: '搭乘纜車上山 🚠 欣賞壯觀的「雪怪」樹冰奇景 ❄️。', badge: '必做' },
-    { day: 2, time: '17:00', title: '五感之湯鶴屋酒店', type: 'stay', duration: '', desc: '入住藏王溫泉區 ♨️，享受著名的強酸性硫磺泉，舒緩疲勞 🧖‍♂️。', badge: '溫泉' },
-    { day: 3, time: '09:00', title: '藏王滑雪', type: 'event', duration: '3小時', desc: '在廣闊的藏王滑雪場享受粉雪樂趣 ⛷️，適合各種程度 ☃️。', badge: '活動' },
-    { day: 3, time: '13:30', title: '銀山觀光中心 大正浪漫 館', type: 'sightseeing', duration: '1小時', desc: '購買銀山溫泉特色伴手禮 🎁，感受大正時代的浪漫氛圍 🏮。', badge: '' },
-    { day: 3, time: '15:30', title: '一之關', type: 'transport', duration: '30分', desc: '前往岩手縣的重要交通轉運點 🚉。', badge: '' },
-    { day: 3, time: '16:30', title: '猊鼻溪 (貌鼻溪みやげ館)', type: 'sightseeing', duration: '1小時 30分', desc: '日本百景之一 🏞️，冬季若有暖桌遊船 🛶 更是別有一番風味。', badge: '美景' },
-    { day: 3, time: '19:30', title: '露櫻酒店 仙台東', type: 'stay', duration: '', desc: 'Route Inn Sendai Higashi 🏨。回到仙台周邊住宿，方便隔天行程 🛌。', badge: '入住' },
-    { day: 4, time: '10:30', title: '十和田市現代美術館', type: 'sightseeing', duration: '2小時', desc: '欣賞草間彌生 🔴、奈良美智等藝術家的戶外裝置藝術 🎨，雪中美術館很美。', badge: '文藝' },
-    { day: 4, time: '15:00', title: '星野集團 青森屋', type: 'stay', duration: '', desc: '體驗濃濃的青森祭典氛圍 🏮，享受著名的露天溫泉「浮湯」♨️。', badge: '豪華住宿' },
-    { day: 5, time: '09:30', title: '奧入瀨溪流館', type: 'sightseeing', duration: '1小時 30分', desc: '了解奧入瀨溪流的生態 🌲，欣賞冬季冰瀑與溪流雪景 ❄️。', badge: '自然' },
-    { day: 5, time: '12:30', title: '青森魚菜中心 (古川市場)', type: 'food', duration: '1小時 30分', desc: '購買餐券 🎫，自選喜愛的海鮮 🐟 製作專屬的「NOKKEDON」海鮮丼 🍚。', badge: '必吃' },
-    { day: 5, time: '14:30', title: '睡魔之家 WARASSE', type: 'sightseeing', duration: '1小時', desc: '近距離觀賞震撼的大型睡魔燈籠 👹，了解青森睡魔祭歷史。', badge: '文化' },
-    { day: 5, time: '16:00', title: 'A-FACTORY', type: 'shopping', duration: '1小時', desc: '購買青森蘋果相關特產 🍎、西打酒 🥂，很有設計感的複合設施。', badge: '購物' },
-    { day: 5, time: '17:30', title: 'アスパム物産 (ASPAM)', type: 'shopping', duration: '1小時', desc: '青森地標三角形建築 🔺，這裡也有豐富的青森土產 🎁。', badge: '' },
-    { day: 5, time: '19:00', title: '青森日航城市酒店', type: 'stay', duration: '', desc: 'Hotel Jal City Aomori 🏨。位於青森市中心，交通與購物都非常方便 ✨。', badge: '入住' },
-    { day: 6, time: '09:30', title: '青森縣立美術館', type: 'sightseeing', duration: '2小時', desc: '必看奈良美智的「青森犬」🐶，雪妝的美術館非常夢幻 ❄️。', badge: '文藝' },
-    { day: 6, time: '13:00', title: '浅所海岸', type: 'sightseeing', duration: '1小時', desc: '冬季著名的天鵝飛來地 🦢，可以近距離看到許多白天鵝 📸。', badge: '自然' },
-    { day: 6, time: '15:00', title: '新青森縣綜合運動公園', type: 'sightseeing', duration: '1小時 30分', desc: '腹地廣大的公園 🌳，適合散步拍照 🚶‍♂️。', badge: '' },
-    { day: 6, time: '18:00', title: '青森港 海の食堂 大福丸', type: 'food', duration: '1小時 30分', desc: '充滿活力的帆立貝釣魚餐廳 🎣，享受新鮮的海鮮料理 🍣。', badge: '晚餐' },
-    { day: 7, time: '10:00', title: '移動：青森 -> 仙台', type: 'transport', duration: '2小時', desc: '搭乘新幹線隼號 (Hayabusa) 🚄 返回仙台。', badge: '移動' },
-    { day: 7, time: '13:00', title: 'Lopia - Sendai Yodobashi', type: 'shopping', duration: '2小時', desc: '位於 Yodobashi 仙台店內的人氣超市 🛒，熟食和肉品CP值超高 🥩。', badge: '必逛' },
-    { day: 7, time: '15:30', title: '里士滿仙台站前高級酒店', type: 'stay', duration: '', desc: '再次入住 🏨，放置戰利品與休息 💤。', badge: '入住' },
-    { day: 8, time: '10:00', title: '三井 OUTLET PARK 仙台港', type: 'shopping', duration: '3小時', desc: '東北最大的 Outlet 🛍️，摩天輪是地標 🎡，盡情購物！', badge: '購物' },
+    { day: 1, time: '13:30', title: '仙台機場', type: 'transport', duration: '40分', desc: '抵達仙台機場，搭乘仙台機場 Access 線前往仙台車站。 ✈️👜', badge: '抵達' },
+    { day: 1, time: '15:00', title: '里士滿仙台站前高級酒店', type: 'stay', duration: '', desc: 'Richmond Hotel Premier。就在仙台車站對面，交通超方便，先去放行李。 🏨🔑', badge: '入住' },
+    { day: 1, time: '17:30', title: '仙台善治郎牛舌專賣', type: 'food', duration: '1小時 30分', desc: '仙台名物！極厚切牛舌定食，這家是當地人也推薦的名店，就在車站三樓。 🐮👅🍚', badge: '必吃' },
+    { day: 1, time: '19:30', title: '唐吉訶德 仙台車站西口 本店', type: 'shopping', duration: '2小時', desc: '就在商店街入口附近，24小時營業，藥妝零食補貨好地方。 🛍️🐧', badge: '購物' },
+    { day: 2, time: '09:30', title: '宮城藏王狐狸村', type: 'sightseeing', duration: '2小時', desc: '在雪地裡看毛茸茸的狐狸群，非常療癒！記得注意隨身物品。 🦊❄️', badge: '拍照重點' },
+    { day: 2, time: '13:00', title: '藏王纜車山麓站', type: 'sightseeing', duration: '2小時', desc: '搭乘纜車上山欣賞壯觀的「雪怪」樹冰奇景。 🚠🏔️', badge: '必做' },
+    { day: 2, time: '17:00', title: '五感之湯鶴屋酒店', type: 'stay', duration: '', desc: '入住藏王溫泉區，享受著名的強酸性硫磺泉，舒緩疲勞。 ♨️🍶', badge: '溫泉' },
+    { day: 3, time: '09:00', title: '藏王滑雪', type: 'event', duration: '3小時', desc: '在廣闊的藏王滑雪場享受粉雪樂趣，適合各種程度。 ⛷️☃️', badge: '活動' },
+    { day: 3, time: '13:30', title: '銀山觀光中心 大正浪漫 館', type: 'sightseeing', duration: '1小時', desc: '購買銀山溫泉特色伴手禮，感受大正時代的浪漫氛圍。 🏮📸', badge: '' },
+    { day: 3, time: '15:30', title: '一之關', type: 'transport', duration: '30分', desc: '前往岩手縣的重要交通轉運點。 🚄💨', badge: '' },
+    { day: 3, time: '16:30', title: '猊鼻溪 (貌鼻溪みやげ館)', type: 'sightseeing', duration: '1小時 30分', desc: '日本百景之一，冬季若有暖桌遊船更是別有一番風味。 🛶🍂', badge: '美景' },
+    { day: 3, time: '19:30', title: '露櫻酒店 仙台東', type: 'stay', duration: '', desc: 'Route Inn Sendai Higashi。回到仙台周邊住宿，方便隔天行程。 🛏️💤', badge: '入住' },
+    { day: 4, time: '10:30', title: '十和田市現代美術館', type: 'sightseeing', duration: '2小時', desc: '欣賞草間彌生、奈良美智等藝術家的戶外裝置藝術，雪中美術館很美。 🎨🐎', badge: '文藝' },
+    { day: 4, time: '15:00', title: '星野集團 青森屋', type: 'stay', duration: '', desc: '體驗濃濃的青森祭典氛圍，享受著名的露天溫泉「浮湯」。 🍎👹♨️', badge: '豪華住宿' },
+    { day: 5, time: '09:30', title: '奧入瀨溪流館', type: 'sightseeing', duration: '1小時 30分', desc: '了解奧入瀨溪流的生態，欣賞冬季冰瀑與溪流雪景。 🏞️💧', badge: '自然' },
+    { day: 5, time: '12:30', title: '青森魚菜中心 (古川市場)', type: 'food', duration: '1小時 30分', desc: '購買餐券，自選喜愛的海鮮製作專屬的「NOKKEDON」海鮮丼。 🐟🍚🥢', badge: '必吃' },
+    { day: 5, time: '14:30', title: '睡魔之家 WARASSE', type: 'sightseeing', duration: '1小時', desc: '近距離觀賞震撼的大型睡魔燈籠，了解青森睡魔祭歷史。 🏮👹', badge: '文化' },
+    { day: 5, time: '16:00', title: 'A-FACTORY', type: 'shopping', duration: '1小時', desc: '購買青森蘋果相關特產、西打酒，很有設計感的複合設施。 🍏🎁', badge: '購物' },
+    { day: 5, time: '17:30', title: 'アスパム物産 (ASPAM)', type: 'shopping', duration: '1小時', desc: '青森地標三角形建築，這裡也有豐富的青森土產。 🏢✨', badge: '' },
+    { day: 5, time: '19:00', title: '青森日航城市酒店', type: 'stay', duration: '', desc: 'Hotel Jal City Aomori。位於青森市中心，交通與購物都非常方便。 🏨🌃', badge: '入住' },
+    { day: 6, time: '09:30', title: '青森縣立美術館', type: 'sightseeing', duration: '2小時', desc: '必看奈良美智的「青森犬」，雪妝的美術館非常夢幻。 🐕🎨', badge: '文藝' },
+    { day: 6, time: '13:00', title: '浅所海岸', type: 'sightseeing', duration: '1小時', desc: '冬季著名的天鵝飛來地，可以近距離看到許多白天鵝。 🦢🌊', badge: '自然' },
+    { day: 6, time: '15:00', title: '新青森縣綜合運動公園', type: 'sightseeing', duration: '1小時 30分', desc: '腹地廣大的公園，適合散步拍照。 🏟️🌲', badge: '' },
+    { day: 6, time: '18:00', title: '青森港 海の食堂 大福丸', type: 'food', duration: '1小時 30分', desc: '充滿活力的帆立貝釣魚餐廳，享受新鮮的海鮮料理。 🦑🐚', badge: '晚餐' },
+    { day: 7, time: '10:00', title: '移動：青森 -> 仙台', type: 'transport', duration: '2小時', desc: '搭乘新幹線隼號 (Hayabusa) 返回仙台。 🚄🍱', badge: '移動' },
+    { day: 7, time: '13:00', title: 'Lopia - Sendai Yodobashi', type: 'shopping', duration: '2小時', desc: '位於 Yodobashi 仙台店內的人氣超市，熟食和肉品CP值超高。 🥩🛒', badge: '必逛' },
+    { day: 7, time: '15:30', title: '里士滿仙台站前高級酒店', type: 'stay', duration: '', desc: '再次入住，放置戰利品與休息。 🏨🛍️', badge: '入住' },
+    { day: 8, time: '10:00', title: '三井 OUTLET PARK 仙台港', type: 'shopping', duration: '3小時', desc: '東北最大的 Outlet，摩天輪是地標，盡情購物！ 🎡🛍️', badge: '購物' },
     { day: 8, time: '13:30', title: '仙台海洋森林水族館', type: 'sightseeing', duration: '2小時 30分', desc: '就在 Outlet 附近，海豚 🐬 和海獅表演 🦁 非常精彩。', badge: '活動' },
     { day: 8, time: '17:00', title: '一蘭 仙台站前店', type: 'food', duration: '1小時', desc: '大家都愛的豚骨拉麵 🍜，想念的味道 😋。', badge: '晚餐' },
-    { day: 8, time: '19:00', title: '仔虎生牛肉與燒肉 Clisroad店', type: 'food', duration: '2小時', desc: '米澤牛燒肉名店 🥩，建議提前預約 📅，享受高級和牛 🔥。', badge: '豪華晚餐' },
-    { day: 8, time: '21:30', title: '唐吉訶德 仙台車站西口 本店', type: 'shopping', duration: '1小時 30分', desc: '行程最後一晚 🌙，將藥妝、零食伴手禮一次買齊！ 🛍️', badge: '補貨' },
+    { day: 8, time: '19:00', title: '仔虎生牛肉與燒肉 Clisroad店', type: 'food', duration: '2小時', desc: '米澤牛燒肉名店，建議提前預約 📅，享受高級和牛 🔥。', badge: '豪華晚餐' },
+    { day: 8, time: '21:30', title: '唐吉訶德 仙台車站西口 本店', type: 'shopping', duration: '1小時 30分', desc: '行程最後一晚 🌙，將藥妝、零食伴手禮一次買齊！ 🐧🎁', badge: '補貨' },
     { day: 9, time: '10:00', title: '寶可夢中心 Pokémon Center Tohoku', type: 'shopping', duration: '1小時 30分', desc: '位於仙台 PARCO 本館 8 樓，訓練家必朝聖！⚡🔴 有東北限定的皮卡丘。', badge: '必逛' },
     { day: 9, time: '12:30', title: '松島蒲鉾本舖 本店', type: 'food', duration: '1小時', desc: '親手體驗烤魚板 (笹かまぼこ) 🍢，剛烤好熱騰騰的非常美味 😋。', badge: '體驗' },
     { day: 9, time: '14:30', title: 'JR Fruit Park Sendai Arahama', type: 'sightseeing', duration: '1小時 30分', desc: '仙台沿海的新景點 🌊，有全年度的採果體驗 🍓 和設計感十足的咖啡廳 ☕。', badge: '自然' },
@@ -221,7 +219,7 @@ const ChiikawaSkiBanner = ({ day }) => {
 };
 
 const Card = ({ children, className = "", onClick }) => (
-  <div onClick={onClick} className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 ${className}`}>{children}</div>
+  <div onClick={onClick} className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 w-full ${className}`}>{children}</div>
 );
 
 const Badge = ({ text, color }) => {
@@ -242,10 +240,14 @@ export default function App() {
   const [headerIconType, setHeaderIconType] = useState('chiikawa');
   const [useRealTimeWeather, setUseRealTimeWeather] = useState(false);
   const [realTimeWeather, setRealTimeWeather] = useState([]);
-  const [itineraryList, setItineraryList] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [checklist, setChecklist] = useState([]);
-  const [liveCams, setLiveCams] = useState([]);
+  
+  // -- Initialize State with SEED DATA (Important: Add fake IDs for local render) --
+  const [itineraryList, setItineraryList] = useState(SEED_ITINERARY.map((i, idx) => ({ ...i, id: `seed-itin-${idx}` })));
+  const [expenses, setExpenses] = useState(SEED_EXPENSES.map((i, idx) => ({ ...i, id: `seed-exp-${idx}` })));
+  const [checklist, setChecklist] = useState(SEED_CHECKLIST.map((i, idx) => ({ ...i, id: `seed-chk-${idx}` })));
+  const [liveCams, setLiveCams] = useState(SEED_LIVECAMS.map((i, idx) => ({ ...i, id: `seed-cam-${idx}` })));
+
+  // Modals & Inputs
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [currentEvent, setCurrentEvent] = useState({ id: null, time: '', title: '', type: 'sightseeing', duration: '', desc: '', badge: '' });
   const [isCamModalOpen, setIsCamModalOpen] = useState(false);
@@ -255,50 +257,73 @@ export default function App() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('隨身行李');
 
+  // -- Authentication --
   useEffect(() => {
-    const initAuth = async () => { await signInAnonymously(auth); };
+    const initAuth = async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (e) {
+        console.error("Auth failed (likely preview mode)", e);
+        // Even if auth fails, we show seed data because it's in initial state
+      }
+    };
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
+  // -- Data Sync --
   useEffect(() => {
     if (!user) return;
+
+    // Listeners will overwrite local state with DB state
     const unsubItinerary = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'itinerary'), (snapshot) => {
-      setItineraryList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      if (!snapshot.empty) setItineraryList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     const unsubExpenses = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'expenses'), (snapshot) => {
-      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => b.createdAt - a.createdAt));
+      if (!snapshot.empty) setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => b.createdAt - a.createdAt));
     });
     const unsubChecklist = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'checklist'), (snapshot) => {
-      setChecklist(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      if (!snapshot.empty) setChecklist(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     const unsubLiveCams = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'liveCams'), (snapshot) => {
-      setLiveCams(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      if (!snapshot.empty) setLiveCams(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => { unsubItinerary(); unsubExpenses(); unsubChecklist(); unsubLiveCams(); };
   }, [user]);
 
-  // -- Auto Seed Check --
+  // -- Auto Seed (Check & Fill Empty DB) --
   useEffect(() => {
     if (!user) return;
     const autoSeed = async () => {
         try {
             const itinRef = collection(db, 'artifacts', appId, 'public', 'data', 'itinerary');
             const itinSnap = await getDocs(query(itinRef, limit(1)));
-            if (itinSnap.empty) for (const item of SEED_ITINERARY) await addDoc(itinRef, { ...item, createdAt: Date.now() });
+            if (itinSnap.empty) {
+                console.log("Seeding Itinerary...");
+                for (const item of SEED_ITINERARY) await addDoc(itinRef, { ...item, createdAt: Date.now() }); 
+            }
 
             const expRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
             const expSnap = await getDocs(query(expRef, limit(1)));
-            if (expSnap.empty) for (const item of SEED_EXPENSES) await addDoc(expRef, { ...item, createdAt: Date.now() });
+            if (expSnap.empty) {
+                 console.log("Seeding Expenses...");
+                for (const item of SEED_EXPENSES) await addDoc(expRef, { ...item, createdAt: Date.now() }); 
+            }
             
             const checkRef = collection(db, 'artifacts', appId, 'public', 'data', 'checklist');
             const checkSnap = await getDocs(query(checkRef, limit(1)));
-            if (checkSnap.empty) for (const item of SEED_CHECKLIST) await addDoc(checkRef, { ...item, createdAt: Date.now() });
+            if (checkSnap.empty) {
+                 console.log("Seeding Checklist...");
+                for (const item of SEED_CHECKLIST) await addDoc(checkRef, { ...item, createdAt: Date.now() }); 
+            }
 
             const camRef = collection(db, 'artifacts', appId, 'public', 'data', 'liveCams');
             const camSnap = await getDocs(query(camRef, limit(1)));
-            if (camSnap.empty) for (const item of SEED_LIVECAMS) await addDoc(camRef, { ...item, createdAt: Date.now() });
+            if (camSnap.empty) {
+                 console.log("Seeding LiveCams...");
+                for (const item of SEED_LIVECAMS) await addDoc(camRef, { ...item, createdAt: Date.now() }); 
+            }
         } catch (e) { console.error("Auto seed error:", e); }
     };
     autoSeed();
@@ -348,21 +373,6 @@ export default function App() {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const seedData = async () => {
-    if (!user) return;
-    try {
-      const itinCol = collection(db, 'artifacts', appId, 'public', 'data', 'itinerary');
-      for (const item of SEED_ITINERARY) { await addDoc(itinCol, { ...item, createdAt: Date.now() }); }
-      const expCol = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
-      for (const item of SEED_EXPENSES) { await addDoc(expCol, { ...item, createdAt: Date.now() }); }
-      const checkCol = collection(db, 'artifacts', appId, 'public', 'data', 'checklist');
-      for (const item of SEED_CHECKLIST) { await addDoc(checkCol, { ...item, createdAt: Date.now() }); }
-      const camCol = collection(db, 'artifacts', appId, 'public', 'data', 'liveCams');
-      for (const item of SEED_LIVECAMS) { await addDoc(camCol, { ...item, createdAt: Date.now() }); }
-      alert("載入成功！請重新整理頁面以查看更新。");
-    } catch (e) { console.error("Seeding error", e); alert("載入失敗：" + e.message); }
   };
 
   const handleCopyLink = () => {
@@ -467,8 +477,8 @@ export default function App() {
   return (
     <div className="flex justify-center min-h-screen bg-gray-100">
       <GlobalStyle />
-      {/* Mobile Wrapper */}
-      <div className="w-full max-w-md bg-slate-50 h-screen flex flex-col font-sans text-slate-800 overflow-hidden relative shadow-2xl">
+      {/* Mobile Wrapper (Max Width Increased to lg for better desktop view) */}
+      <div className="w-full max-w-lg bg-slate-50 h-screen flex flex-col font-sans text-slate-800 overflow-hidden relative shadow-2xl">
       <SnowBackground />
       
       {/* 1. HEADER */}
@@ -614,19 +624,7 @@ export default function App() {
 
             <div className="absolute left-[54px] top-44 bottom-0 w-0.5 border-l-2 border-dotted border-slate-300 z-0"></div>
 
-            {itineraryList.length === 0 && (
-                <div className="text-center py-10 opacity-70">
-                    <ChiikawaIcon className="w-20 h-20 mx-auto mb-4 grayscale" />
-                    <p className="mb-4 text-slate-500">目前沒有任何行程資料。</p>
-                    <button 
-                        onClick={seedData}
-                        className="bg-green-500 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-green-600 transition-colors flex items-center gap-2 mx-auto"
-                    >
-                        <RotateCcw className="w-4 h-4" /> 載入預設範例
-                    </button>
-                </div>
-            )}
-
+            {/* List with Seed fallback display */}
             {(itineraryByDay[activeDay] || []).map((event) => (
               <div key={event.id} className="relative z-10 flex gap-4">
                 <div className="flex-none w-12 pt-4 flex flex-col items-end">
@@ -751,7 +749,7 @@ export default function App() {
         {/* --- TAB 3: EXPENSES --- */}
         {activeTab === 'expenses' && (
           <div className="space-y-6">
-            <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
+            <div className="bg-slate-900 text-white rounded-3xl w-full p-6 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-slate-800 rounded-full blur-3xl -mr-10 -mt-10"></div>
               <p className="text-slate-400 text-sm mb-1">總支出</p>
               <h2 className="text-4xl font-bold mb-4">NT$ {Number(totalTWD).toLocaleString()}</h2>
@@ -776,10 +774,9 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {expenses.length === 0 && <p className="text-center text-slate-400 text-sm py-4">目前沒有支出紀錄。</p>}
+              <div className="space-y-4">
                 {expenses.map((expense) => (
-                  <Card key={expense.id} className="flex items-center justify-between !py-3">
+                  <Card key={expense.id} className="flex items-center justify-between !py-3 w-full">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full ${expense.category === '食物' ? 'bg-orange-100 text-orange-500' : 'bg-blue-100 text-blue-500'}`}>
                         {expense.category === '食物' ? <Utensils className="w-4 h-4"/> : <CreditCard className="w-4 h-4"/>}
@@ -817,14 +814,12 @@ export default function App() {
                 </button>
              </div>
 
-             {liveCams.length === 0 && <p className="text-center text-slate-400 text-sm py-4">目前沒有實況連結。</p>}
-
              {liveCams.map((cam) => {
                const videoId = getYouTubeId(cam.url);
                const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1548263594-a71ea65a857c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
                
                return (
-                 <div key={cam.id} className="bg-black rounded-2xl overflow-hidden shadow-lg group relative">
+                 <div key={cam.id} className="bg-black rounded-2xl overflow-hidden shadow-lg group relative w-full">
                    <div 
                       className="aspect-video bg-slate-800 relative flex items-center justify-center cursor-pointer"
                       onClick={() => window.open(cam.url || 'https://www.youtube.com', '_blank')}
@@ -865,7 +860,7 @@ export default function App() {
         {/* --- TAB 5: GUIDE / CHECKLIST --- */}
         {activeTab === 'guide' && (
           <div className="space-y-6">
-            <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 !border-none">
+            <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 !border-none w-full">
               <div className="flex justify-between items-end mb-2">
                 <h3 className="font-bold text-indigo-900">打包進度</h3>
                 <span className="text-2xl font-bold text-indigo-600">
@@ -931,7 +926,7 @@ export default function App() {
                         </h3>
                         <div className="space-y-2">
                             {items.map(item => (
-                                <Card key={item.id} className={`flex items-center justify-between !py-3 transition-colors group ${item.checked ? 'bg-slate-50' : 'bg-white'}`}>
+                                <Card key={item.id} className={`flex items-center justify-between !py-3 transition-colors group w-full ${item.checked ? 'bg-slate-50' : 'bg-white'}`}>
                                     <div className="flex items-center gap-3 flex-1">
                                         <button 
                                         onClick={() => toggleChecklist(item.id, item.checked)}
