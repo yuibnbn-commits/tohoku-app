@@ -12,53 +12,39 @@ import {
 // Firebase Imports
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics"; 
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, query, getDocs, limit } from "firebase/firestore";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, getDocs, limit } from "firebase/firestore";
 
 /**
- * Firebase Initialization (修正版)
- * 邏輯：優先使用預覽環境變數 (__firebase_config) 以確保預覽功能正常。
- * 若環境變數不存在（例如部署後），則使用您的自訂設定。
+ * 1. Firebase 設定
+ * 這邊直接填入您的專案設定，確保部署後也能連線
  */
-let firebaseConfig;
-let appId;
+const firebaseConfig = {
+  apiKey: "AIzaSyBHD_CMQpyO_CDq_trAnvIvv2MRJd0MwkA",
+  authDomain: "tohokuwintertrip.firebaseapp.com",
+  projectId: "tohokuwintertrip",
+  storageBucket: "tohokuwintertrip.firebasestorage.app",
+  messagingSenderId: "275705054472",
+  appId: "1:275705054472:web:f90514e3932bc02eb1d8bd",
+  measurementId: "G-48HHH5CS74"
+};
 
-try {
-  // 1. 嘗試讀取預覽環境設定 (Canvas Environment)
-  if (typeof __firebase_config !== 'undefined') {
-    firebaseConfig = JSON.parse(__firebase_config);
-    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-  } else {
-    throw new Error('No env config');
-  }
-} catch (e) {
-  // 2. 如果沒有環境變數 (部署環境)，使用您的設定
-  firebaseConfig = {
-    apiKey: "AIzaSyBHD_CMQpyO_CDq_trAnvIvv2MRJd0MwkA",
-    authDomain: "tohokuwintertrip.firebaseapp.com",
-    projectId: "tohokuwintertrip",
-    storageBucket: "tohokuwintertrip.firebasestorage.app",
-    messagingSenderId: "275705054472",
-    appId: "1:275705054472:web:f90514e3932bc02eb1d8bd",
-    measurementId: "G-48HHH5CS74"
-  };
-  appId = 'tohoku-winter-trip-v1'; 
-}
-
-// Initialize Firebase
+// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Initialize Analytics (Safe check)
+// 嘗試初始化 Analytics (在某些阻擋 Cookie 的環境下可能會失敗，故加 try-catch)
 let analytics;
-if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
-    try {
-        analytics = getAnalytics(app);
-    } catch (e) {
-        console.warn("Analytics init failed (likely due to environment context):", e);
-    }
+try {
+  if (typeof window !== 'undefined') {
+    analytics = getAnalytics(app);
+  }
+} catch (e) {
+  console.log("Analytics init skipped");
 }
+
+const appId = 'tohoku-winter-trip-v1'; 
 
 /**
  * 載入粉圓體 (Huninn) 與 雪花動畫樣式
@@ -69,26 +55,24 @@ const GlobalStyle = () => (
     
     body {
       font-family: 'jf-openhuninn-2.0', sans-serif !important;
+      margin: 0;
+      padding: 0;
+      background-color: #e2e8f0; /* 電腦版背景色 (淺灰) */
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
     }
 
+    /* 雪花動畫 */
     @keyframes snowfall {
-      0% {
-        transform: translateY(-10vh) translateX(-10px) rotate(0deg);
-        opacity: 0;
-      }
-      20% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(100vh) translateX(20px) rotate(360deg);
-        opacity: 0;
-      }
+      0% { transform: translateY(-10vh) translateX(-10px) rotate(0deg); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translateY(100vh) translateX(20px) rotate(360deg); opacity: 0; }
     }
-
     .snowflake {
       position: absolute;
       top: -20px;
-      color: #dbeafe; /* blue-100 */
+      color: #dbeafe; 
       animation-name: snowfall;
       animation-timing-function: linear;
       animation-iteration-count: infinite;
@@ -98,60 +82,38 @@ const GlobalStyle = () => (
   `}</style>
 );
 
-/**
- * 雪花背景組件
- */
 const SnowBackground = () => {
-  const flakes = useMemo(() => {
-    return Array.from({ length: 40 }).map((_, i) => ({
+  const flakes = useMemo(() => Array.from({ length: 40 }).map((_, i) => ({
       id: i,
       left: Math.random() * 100 + '%',
       animationDuration: Math.random() * 10 + 10 + 's',
       animationDelay: Math.random() * -20 + 's',
       fontSize: Math.random() * 14 + 10 + 'px',
       opacity: Math.random() * 0.6 + 0.2,
-    }));
-  }, []);
+  })), []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {flakes.map((flake) => (
-        <div
-          key={flake.id}
-          className="snowflake"
-          style={{
-            left: flake.left,
-            animationDuration: flake.animationDuration,
-            animationDelay: flake.animationDelay,
-            fontSize: flake.fontSize,
-            opacity: flake.opacity,
-          }}
-        >
-          ❄
-        </div>
+        <div key={flake.id} className="snowflake" style={{...flake}}>❄</div>
       ))}
     </div>
   );
 };
 
-/**
- * Constants & JMA Helpers
- */
-const JMA_FORECAST_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/040000.json'; // Miyagi / Sendai
+// ... Constants ...
+const JMA_FORECAST_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/040000.json'; // 仙台 (宮城)
 const JMA_WEATHER_PAGE_URL = 'https://www.jma.go.jp/bosai/forecast/#/area_type/offices/area_code/040000';
 const CURRENCY_SEARCH_URL = 'https://www.google.com/search?q=JPY+to+TWD';
 
-// JMA Code to Icon Mapper
 const getJmaWeatherIcon = (code) => {
   const c = parseInt(code);
-  // 100s: Sunny, 200s: Cloudy, 300s: Rain, 400s: Snow
   if (c >= 100 && c < 200) return 'sun';
   if (c >= 200 && c < 300) return 'cloud';
   if (c >= 300 && c < 400) return 'rain';
   if (c >= 400) return 'snow';
   return 'cloud';
 };
-
 const getJmaWeatherStatus = (code) => {
   const c = parseInt(code);
   if (c >= 100 && c < 200) return '晴朗';
@@ -161,59 +123,40 @@ const getJmaWeatherStatus = (code) => {
   return '陰天';
 }
 
-/**
- * INITIAL MOCK DATA (For seeding)
- */
+// ... Seed Data ...
 const SEED_ITINERARY = [
-    // Day 1: 仙台抵達
     { day: 1, time: '13:30', title: '仙台機場', type: 'transport', duration: '40分', desc: '抵達仙台機場 ✈️，搭乘仙台機場 Access 線 🚆 前往仙台車站。', badge: '抵達' },
     { day: 1, time: '15:00', title: '里士滿仙台站前高級酒店', type: 'stay', duration: '', desc: 'Richmond Hotel Premier 🏨。就在仙台車站對面，交通超方便 ✨，先去放行李 🧳。', badge: '入住' },
     { day: 1, time: '17:30', title: '仙台善治郎牛舌專賣', type: 'food', duration: '1小時 30分', desc: '仙台名物！極厚切牛舌定食 🐮，這家是當地人也推薦的名店 👍，就在車站三樓。', badge: '必吃' },
     { day: 1, time: '19:30', title: '唐吉訶德 仙台車站西口 本店', type: 'shopping', duration: '2小時', desc: '就在商店街入口附近 🛍️，24小時營業 🕒，藥妝零食補貨好地方 🐧。', badge: '購物' },
-
-    // Day 2: 宮城藏王 & 樹冰
     { day: 2, time: '09:30', title: '宮城藏王狐狸村', type: 'sightseeing', duration: '2小時', desc: '在雪地裡看毛茸茸的狐狸群 🦊，非常療癒！記得注意隨身物品 ⚠️。', badge: '拍照重點' },
     { day: 2, time: '13:00', title: '藏王纜車山麓站', type: 'sightseeing', duration: '2小時', desc: '搭乘纜車上山 🚠 欣賞壯觀的「雪怪」樹冰奇景 ❄️。', badge: '必做' },
     { day: 2, time: '17:00', title: '五感之湯鶴屋酒店', type: 'stay', duration: '', desc: '入住藏王溫泉區 ♨️，享受著名的強酸性硫磺泉，舒緩疲勞 🧖‍♂️。', badge: '溫泉' },
-
-    // Day 3: 滑雪 & 銀山 & 猊鼻溪
     { day: 3, time: '09:00', title: '藏王滑雪', type: 'event', duration: '3小時', desc: '在廣闊的藏王滑雪場享受粉雪樂趣 ⛷️，適合各種程度 ☃️。', badge: '活動' },
     { day: 3, time: '13:30', title: '銀山觀光中心 大正浪漫 館', type: 'sightseeing', duration: '1小時', desc: '購買銀山溫泉特色伴手禮 🎁，感受大正時代的浪漫氛圍 🏮。', badge: '' },
     { day: 3, time: '15:30', title: '一之關', type: 'transport', duration: '30分', desc: '前往岩手縣的重要交通轉運點 🚉。', badge: '' },
     { day: 3, time: '16:30', title: '猊鼻溪 (貌鼻溪みやげ館)', type: 'sightseeing', duration: '1小時 30分', desc: '日本百景之一 🏞️，冬季若有暖桌遊船 🛶 更是別有一番風味。', badge: '美景' },
     { day: 3, time: '19:30', title: '露櫻酒店 仙台東', type: 'stay', duration: '', desc: 'Route Inn Sendai Higashi 🏨。回到仙台周邊住宿，方便隔天行程 🛌。', badge: '入住' },
-
-    // Day 4: 青森藝術 & 星野
     { day: 4, time: '10:30', title: '十和田市現代美術館', type: 'sightseeing', duration: '2小時', desc: '欣賞草間彌生 🔴、奈良美智等藝術家的戶外裝置藝術 🎨，雪中美術館很美。', badge: '文藝' },
     { day: 4, time: '15:00', title: '星野集團 青森屋', type: 'stay', duration: '', desc: '體驗濃濃的青森祭典氛圍 🏮，享受著名的露天溫泉「浮湯」♨️。', badge: '豪華住宿' },
-
-    // Day 5: 青森市區巡禮
     { day: 5, time: '09:30', title: '奧入瀨溪流館', type: 'sightseeing', duration: '1小時 30分', desc: '了解奧入瀨溪流的生態 🌲，欣賞冬季冰瀑與溪流雪景 ❄️。', badge: '自然' },
     { day: 5, time: '12:30', title: '青森魚菜中心 (古川市場)', type: 'food', duration: '1小時 30分', desc: '購買餐券 🎫，自選喜愛的海鮮 🐟 製作專屬的「NOKKEDON」海鮮丼 🍚。', badge: '必吃' },
     { day: 5, time: '14:30', title: '睡魔之家 WARASSE', type: 'sightseeing', duration: '1小時', desc: '近距離觀賞震撼的大型睡魔燈籠 👹，了解青森睡魔祭歷史。', badge: '文化' },
     { day: 5, time: '16:00', title: 'A-FACTORY', type: 'shopping', duration: '1小時', desc: '購買青森蘋果相關特產 🍎、西打酒 🥂，很有設計感的複合設施。', badge: '購物' },
     { day: 5, time: '17:30', title: 'アスパム物産 (ASPAM)', type: 'shopping', duration: '1小時', desc: '青森地標三角形建築 🔺，這裡也有豐富的青森土產 🎁。', badge: '' },
     { day: 5, time: '19:00', title: '青森日航城市酒店', type: 'stay', duration: '', desc: 'Hotel Jal City Aomori 🏨。位於青森市中心，交通與購物都非常方便 ✨。', badge: '入住' },
-
-    // Day 6: 青森深度遊
     { day: 6, time: '09:30', title: '青森縣立美術館', type: 'sightseeing', duration: '2小時', desc: '必看奈良美智的「青森犬」🐶，雪妝的美術館非常夢幻 ❄️。', badge: '文藝' },
     { day: 6, time: '13:00', title: '浅所海岸', type: 'sightseeing', duration: '1小時', desc: '冬季著名的天鵝飛來地 🦢，可以近距離看到許多白天鵝 📸。', badge: '自然' },
     { day: 6, time: '15:00', title: '新青森縣綜合運動公園', type: 'sightseeing', duration: '1小時 30分', desc: '腹地廣大的公園 🌳，適合散步拍照 🚶‍♂️。', badge: '' },
     { day: 6, time: '18:00', title: '青森港 海の食堂 大福丸', type: 'food', duration: '1小時 30分', desc: '充滿活力的帆立貝釣魚餐廳 🎣，享受新鮮的海鮮料理 🍣。', badge: '晚餐' },
-
-    // Day 7: 返回仙台 & Lopia
     { day: 7, time: '10:00', title: '移動：青森 -> 仙台', type: 'transport', duration: '2小時', desc: '搭乘新幹線隼號 (Hayabusa) 🚄 返回仙台。', badge: '移動' },
     { day: 7, time: '13:00', title: 'Lopia - Sendai Yodobashi', type: 'shopping', duration: '2小時', desc: '位於 Yodobashi 仙台店內的人氣超市 🛒，熟食和肉品CP值超高 🥩。', badge: '必逛' },
     { day: 7, time: '15:30', title: '里士滿仙台站前高級酒店', type: 'stay', duration: '', desc: '再次入住 🏨，放置戰利品與休息 💤。', badge: '入住' },
-
-    // Day 8: 仙台港區 & 美食
     { day: 8, time: '10:00', title: '三井 OUTLET PARK 仙台港', type: 'shopping', duration: '3小時', desc: '東北最大的 Outlet 🛍️，摩天輪是地標 🎡，盡情購物！', badge: '購物' },
     { day: 8, time: '13:30', title: '仙台海洋森林水族館', type: 'sightseeing', duration: '2小時 30分', desc: '就在 Outlet 附近，海豚 🐬 和海獅表演 🦁 非常精彩。', badge: '活動' },
     { day: 8, time: '17:00', title: '一蘭 仙台站前店', type: 'food', duration: '1小時', desc: '大家都愛的豚骨拉麵 🍜，想念的味道 😋。', badge: '晚餐' },
     { day: 8, time: '19:00', title: '仔虎生牛肉與燒肉 Clisroad店', type: 'food', duration: '2小時', desc: '米澤牛燒肉名店 🥩，建議提前預約 📅，享受高級和牛 🔥。', badge: '豪華晚餐' },
     { day: 8, time: '21:30', title: '唐吉訶德 仙台車站西口 本店', type: 'shopping', duration: '1小時 30分', desc: '行程最後一晚 🌙，將藥妝、零食伴手禮一次買齊！ 🛍️', badge: '補貨' },
-
-    // Day 9: 仙台最終巡禮 & 返程
     { day: 9, time: '10:00', title: '寶可夢中心 Pokémon Center Tohoku', type: 'shopping', duration: '1小時 30分', desc: '位於仙台 PARCO 本館 8 樓，訓練家必朝聖！⚡🔴 有東北限定的皮卡丘。', badge: '必逛' },
     { day: 9, time: '12:30', title: '松島蒲鉾本舖 本店', type: 'food', duration: '1小時', desc: '親手體驗烤魚板 (笹かまぼこ) 🍢，剛烤好熱騰騰的非常美味 😋。', badge: '體驗' },
     { day: 9, time: '14:30', title: 'JR Fruit Park Sendai Arahama', type: 'sightseeing', duration: '1小時 30分', desc: '仙台沿海的新景點 🌊，有全年度的採果體驗 🍓 和設計感十足的咖啡廳 ☕。', badge: '自然' },
@@ -252,181 +195,39 @@ const MOCK_WEATHER_DATA = [
 
 const CHECKLIST_CATEGORIES = ['隨身行李', '衣物', '盥洗用品', '電器', '藥品', '其他'];
 
-/**
- * UTILITY COMPONENTS
- */
+// Icons
+const ChiikawaIcon = ({ className }) => (<svg viewBox="0 0 100 100" className={className} fill="none"><circle cx="50" cy="50" r="45" fill="white" stroke="#3B82F6" strokeWidth="3"/><path d="M30 20 L25 10 M70 20 L75 10" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round"/><circle cx="35" cy="45" r="4" fill="#1F2937"/><circle cx="65" cy="45" r="4" fill="#1F2937"/><path d="M45 55 Q50 60 55 55" stroke="#1F2937" strokeWidth="2" strokeLinecap="round"/><circle cx="25" cy="55" r="6" fill="#F9A8D4" opacity="0.6"/><circle cx="75" cy="55" r="6" fill="#F9A8D4" opacity="0.6"/></svg>);
+const HachiwareIcon = ({ className }) => (<svg viewBox="0 0 100 100" className={className} fill="none"><circle cx="50" cy="50" r="45" fill="white" stroke="#3B82F6" strokeWidth="3"/><path d="M15 30 L30 15 L45 30 Z" fill="#60A5FA" /><path d="M55 30 L70 15 L85 30 Z" fill="#60A5FA" /><path d="M20 30 Q50 20 80 30" fill="#60A5FA" stroke="#60A5FA" strokeWidth="2"/><circle cx="35" cy="50" r="4" fill="#1F2937"/><circle cx="65" cy="50" r="4" fill="#1F2937"/><path d="M45 60 Q50 65 55 60" stroke="#1F2937" strokeWidth="2" strokeLinecap="round"/><circle cx="25" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/><circle cx="75" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/></svg>);
+const UsagiIcon = ({ className }) => (<svg viewBox="0 0 100 100" className={className} fill="none"><ellipse cx="30" cy="20" rx="8" ry="20" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/><ellipse cx="70" cy="20" rx="8" ry="20" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/><circle cx="50" cy="55" r="35" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/><circle cx="35" cy="50" r="4" fill="#1F2937"/><circle cx="65" cy="50" r="4" fill="#1F2937"/><path d="M45 60 Q50 65 55 60" stroke="#1F2937" strokeWidth="2" strokeLinecap="round"/><circle cx="25" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/><circle cx="75" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/></svg>);
+const SnowmanIcon = ({ className }) => (<svg viewBox="0 0 100 100" className={className} fill="none"><circle cx="50" cy="65" r="25" fill="white" stroke="#3B82F6" strokeWidth="2"/><circle cx="50" cy="35" r="18" fill="white" stroke="#3B82F6" strokeWidth="2"/><circle cx="45" cy="32" r="2" fill="#1F2937"/><circle cx="55" cy="32" r="2" fill="#1F2937"/><path d="M48 38 L50 42 L52 38" fill="orange" /><path d="M30 65 L20 55" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/><path d="M70 65 L80 55" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/></svg>);
 
-// 1. 吉伊卡哇 (Chiikawa)
-const ChiikawaIcon = ({ className }) => (
-  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="45" fill="white" stroke="#3B82F6" strokeWidth="3"/>
-    <path d="M30 20 L25 10 M70 20 L75 10" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round"/>
-    <circle cx="35" cy="45" r="4" fill="#1F2937"/>
-    <circle cx="65" cy="45" r="4" fill="#1F2937"/>
-    <path d="M45 55 Q50 60 55 55" stroke="#1F2937" strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="25" cy="55" r="6" fill="#F9A8D4" opacity="0.6"/>
-    <circle cx="75" cy="55" r="6" fill="#F9A8D4" opacity="0.6"/>
-  </svg>
-);
-
-// 2. 小八貓 (Hachiware)
-const HachiwareIcon = ({ className }) => (
-  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="45" fill="white" stroke="#3B82F6" strokeWidth="3"/>
-    {/* Blue Ears/Hair */}
-    <path d="M15 30 L30 15 L45 30 Z" fill="#60A5FA" />
-    <path d="M55 30 L70 15 L85 30 Z" fill="#60A5FA" />
-    <path d="M20 30 Q50 20 80 30" fill="#60A5FA" stroke="#60A5FA" strokeWidth="2"/>
-    <circle cx="35" cy="50" r="4" fill="#1F2937"/>
-    <circle cx="65" cy="50" r="4" fill="#1F2937"/>
-    <path d="M45 60 Q50 65 55 60" stroke="#1F2937" strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="25" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/>
-    <circle cx="75" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/>
-  </svg>
-);
-
-// 3. 烏薩奇 (Usagi)
-const UsagiIcon = ({ className }) => (
-  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Ears */}
-    <ellipse cx="30" cy="20" rx="8" ry="20" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/>
-    <ellipse cx="70" cy="20" rx="8" ry="20" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/>
-    {/* Head */}
-    <circle cx="50" cy="55" r="35" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/>
-    <circle cx="35" cy="50" r="4" fill="#1F2937"/>
-    <circle cx="65" cy="50" r="4" fill="#1F2937"/>
-    <path d="M45 60 Q50 65 55 60" stroke="#1F2937" strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="25" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/>
-    <circle cx="75" cy="60" r="6" fill="#FCA5A5" opacity="0.6"/>
-  </svg>
-);
-
-// 4. 雪人 (Snowman)
-const SnowmanIcon = ({ className }) => (
-  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="65" r="25" fill="white" stroke="#3B82F6" strokeWidth="2"/>
-    <circle cx="50" cy="35" r="18" fill="white" stroke="#3B82F6" strokeWidth="2"/>
-    <circle cx="45" cy="32" r="2" fill="#1F2937"/>
-    <circle cx="55" cy="32" r="2" fill="#1F2937"/>
-    <path d="M48 38 L50 42 L52 38" fill="orange" />
-    <path d="M30 65 L20 55" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M70 65 L80 55" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-// Updated Chiikawa Banner with the Trio (Chiikawa, Hachiware, Usagi)
 const ChiikawaSkiBanner = ({ day }) => {
-  const gradients = [
-    "from-sky-200 to-indigo-100",     // Day 1
-    "from-blue-200 to-purple-100",    // Day 2
-    "from-indigo-200 to-pink-100",    // Day 3
-    "from-cyan-200 to-blue-100",      // Day 4
-    "from-violet-200 to-fuchsia-100", // Day 5
-  ];
-  
+  const gradients = ["from-sky-200 to-indigo-100", "from-blue-200 to-purple-100", "from-indigo-200 to-pink-100", "from-cyan-200 to-blue-100", "from-violet-200 to-fuchsia-100"];
   const bgGradient = gradients[(day - 1) % gradients.length] || gradients[0];
-
   return (
     <div className={`w-full h-48 bg-gradient-to-b ${bgGradient} rounded-2xl relative overflow-hidden flex items-end justify-center border border-blue-200 shadow-inner group p-4 transition-colors duration-500`}>
-      {/* Background decorative elements */}
       <div className="absolute top-2 left-10 w-6 h-6 bg-white/60 rounded-full blur-sm animate-pulse"></div>
       <div className="absolute top-6 right-20 w-4 h-4 bg-white/50 rounded-full blur-sm animate-bounce delay-700"></div>
-      
-      {/* Snowflake decorations */}
       <div className="absolute top-4 right-4 text-white opacity-80 text-2xl animate-spin-slow">❄️</div>
       <div className="absolute top-10 left-8 text-white opacity-60 text-xl animate-pulse">❅</div>
-
       <svg viewBox="0 0 300 120" className="h-full w-full drop-shadow-lg relative z-10">
-        
-        {/* --- USAGI (Left, Yellow Rabbit) --- */}
-        <g transform="translate(40, 40) rotate(-10)">
-          {/* Ears */}
-          <ellipse cx="25" cy="15" rx="6" ry="18" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/>
-          <ellipse cx="45" cy="15" rx="6" ry="18" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/>
-          {/* Body */}
-          <circle cx="35" cy="45" r="22" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/>
-          {/* Face */}
-          <circle cx="28" cy="42" r="2" fill="#4B5563"/>
-          <circle cx="42" cy="42" r="2" fill="#4B5563"/>
-          <path d="M32 48 Q35 52 38 48" stroke="#4B5563" strokeWidth="2" fill="none"/>
-          <circle cx="22" cy="46" r="4" fill="#FCA5A5" opacity="0.6"/>
-          <circle cx="48" cy="46" r="4" fill="#FCA5A5" opacity="0.6"/>
-          {/* Scarf */}
-          <path d="M15 55 Q35 65 55 55" stroke="#EF4444" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        </g>
-
-        {/* --- CHIIKAWA (Center, White Bear) --- */}
-        <g transform="translate(130, 30)">
-          {/* Ears */}
-          <circle cx="20" cy="25" r="7" fill="white" stroke="#374151" strokeWidth="2"/>
-          <circle cx="60" cy="25" r="7" fill="white" stroke="#374151" strokeWidth="2"/>
-          {/* Body */}
-          <circle cx="40" cy="50" r="25" fill="white" stroke="#374151" strokeWidth="2"/>
-          {/* Face */}
-          <circle cx="30" cy="48" r="2.5" fill="#374151"/>
-          <circle cx="50" cy="48" r="2.5" fill="#374151"/>
-          <path d="M37 52 Q40 55 43 52" stroke="#374151" strokeWidth="2" fill="none"/>
-          <circle cx="25" cy="52" r="5" fill="#F9A8D4" opacity="0.6"/>
-          <circle cx="55" cy="52" r="5" fill="#F9A8D4" opacity="0.6"/>
-           {/* Ski Goggles on head */}
-          <path d="M25 25 Q40 20 55 25" stroke="#3B82F6" strokeWidth="4" fill="none"/>
-          <rect x="30" y="20" width="20" height="10" rx="4" fill="#60A5FA" stroke="#2563EB" strokeWidth="1"/>
-        </g>
-
-        {/* --- HACHIWARE (Right, Cat with Blue ears) --- */}
-        <g transform="translate(220, 40) rotate(10)">
-           {/* Ears */}
-           <path d="M15 25 L25 10 L35 25 Z" fill="#60A5FA" stroke="#374151" strokeWidth="2" strokeLinejoin="round"/>
-           <path d="M45 25 L55 10 L65 25 Z" fill="#60A5FA" stroke="#374151" strokeWidth="2" strokeLinejoin="round"/>
-          {/* Body */}
-          <circle cx="40" cy="45" r="22" fill="white" stroke="#374151" strokeWidth="2"/>
-          {/* Blue Head Patch */}
-          <path d="M22 30 Q40 25 58 30 L58 20 L22 20 Z" fill="#60A5FA" />
-          {/* Face */}
-          <circle cx="32" cy="42" r="2" fill="#374151"/>
-          <circle cx="48" cy="42" r="2" fill="#374151"/>
-          <path d="M38 46 L40 44 L42 46" stroke="#374151" strokeWidth="1.5" fill="none"/>
-          <circle cx="25" cy="45" r="4" fill="#FCA5A5" opacity="0.5"/>
-          <circle cx="55" cy="45" r="4" fill="#FCA5A5" opacity="0.5"/>
-          {/* Holding a Camera */}
-          <rect x="30" y="55" width="20" height="14" rx="2" fill="#374151"/>
-          <circle cx="40" cy="62" r="4" fill="#4B5563" stroke="white" strokeWidth="1"/>
-        </g>
+        <g transform="translate(40, 40) rotate(-10)"><ellipse cx="25" cy="15" rx="6" ry="18" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/><ellipse cx="45" cy="15" rx="6" ry="18" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/><circle cx="35" cy="45" r="22" fill="#FDE68A" stroke="#B45309" strokeWidth="2"/><circle cx="28" cy="42" r="2" fill="#4B5563"/><circle cx="42" cy="42" r="2" fill="#4B5563"/><path d="M32 48 Q35 52 38 48" stroke="#4B5563" strokeWidth="2" fill="none"/><circle cx="22" cy="46" r="4" fill="#FCA5A5" opacity="0.6"/><circle cx="48" cy="46" r="4" fill="#FCA5A5" opacity="0.6"/><path d="M15 55 Q35 65 55 55" stroke="#EF4444" strokeWidth="4" strokeLinecap="round" fill="none"/></g>
+        <g transform="translate(130, 30)"><circle cx="20" cy="25" r="7" fill="white" stroke="#374151" strokeWidth="2"/><circle cx="60" cy="25" r="7" fill="white" stroke="#374151" strokeWidth="2"/><circle cx="40" cy="50" r="25" fill="white" stroke="#374151" strokeWidth="2"/><circle cx="30" cy="48" r="2.5" fill="#374151"/><circle cx="50" cy="48" r="2.5" fill="#374151"/><path d="M37 52 Q40 55 43 52" stroke="#374151" strokeWidth="2" fill="none"/><circle cx="25" cy="52" r="5" fill="#F9A8D4" opacity="0.6"/><circle cx="55" cy="52" r="5" fill="#F9A8D4" opacity="0.6"/><path d="M25 25 Q40 20 55 25" stroke="#3B82F6" strokeWidth="4" fill="none"/><rect x="30" y="20" width="20" height="10" rx="4" fill="#60A5FA" stroke="#2563EB" strokeWidth="1"/></g>
+        <g transform="translate(220, 40) rotate(10)"><path d="M15 25 L25 10 L35 25 Z" fill="#60A5FA" stroke="#374151" strokeWidth="2" strokeLinejoin="round"/><path d="M45 25 L55 10 L65 25 Z" fill="#60A5FA" stroke="#374151" strokeWidth="2" strokeLinejoin="round"/><circle cx="40" cy="45" r="22" fill="white" stroke="#374151" strokeWidth="2"/><path d="M22 30 Q40 25 58 30 L58 20 L22 20 Z" fill="#60A5FA" /><circle cx="32" cy="42" r="2" fill="#374151"/><circle cx="48" cy="42" r="2" fill="#374151"/><path d="M38 46 L40 44 L42 46" stroke="#374151" strokeWidth="1.5" fill="none"/><circle cx="25" cy="45" r="4" fill="#FCA5A5" opacity="0.5"/><circle cx="55" cy="45" r="4" fill="#FCA5A5" opacity="0.5"/><rect x="30" y="55" width="20" height="14" rx="2" fill="#374151"/><circle cx="40" cy="62" r="4" fill="#4B5563" stroke="white" strokeWidth="1"/></g>
       </svg>
-      
-      <div className="absolute bottom-2 left-0 right-0 text-center z-10">
-        <span className="bg-white/80 backdrop-blur px-3 py-1 rounded-full text-indigo-600 text-[10px] font-bold tracking-widest uppercase shadow-sm">
-          第 {day} 天冒險
-        </span>
-      </div>
+      <div className="absolute bottom-2 left-0 right-0 text-center z-10"><span className="bg-white/80 backdrop-blur px-3 py-1 rounded-full text-indigo-600 text-[10px] font-bold tracking-widest uppercase shadow-sm">第 {day} 天冒險</span></div>
     </div>
   );
 };
 
 const Card = ({ children, className = "", onClick }) => (
-  <div onClick={onClick} className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 ${className}`}>
-    {children}
-  </div>
+  <div onClick={onClick} className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 ${className}`}>{children}</div>
 );
 
 const Badge = ({ text, color }) => {
   if (!text) return null;
-  const colors = {
-    yellow: 'bg-yellow-100 text-yellow-700',
-    purple: 'bg-purple-100 text-purple-700',
-    blue: 'bg-blue-100 text-blue-700',
-    red: 'bg-red-100 text-red-700',
-  };
-  const theme = text === '必做' ? colors.yellow : 
-                text === '拍照重點' ? colors.purple :
-                text === '超好吃' ? colors.red : 
-                text === '活動' ? 'bg-indigo-100 text-indigo-700' : colors.blue;
-                
-  return (
-    <span className={`${theme} text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider`}>
-      {text}
-    </span>
-  );
+  const theme = text === '必做' ? 'bg-yellow-100 text-yellow-700' : text === '拍照重點' ? 'bg-purple-100 text-purple-700' : text === '超好吃' ? 'bg-red-100 text-red-700' : text === '活動' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700';
+  return <span className={`${theme} text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider`}>{text}</span>;
 };
 
 /**
@@ -438,84 +239,44 @@ export default function App() {
   const [activeDay, setActiveDay] = useState(1);
   const [customBanners, setCustomBanners] = useState({}); 
   const [showShareModal, setShowShareModal] = useState(false);
-  
-  // -- Header Icon State --
   const [headerIconType, setHeaderIconType] = useState('chiikawa');
-  
-  // -- Weather State --
   const [useRealTimeWeather, setUseRealTimeWeather] = useState(false);
   const [realTimeWeather, setRealTimeWeather] = useState([]);
-
-  // -- Real Data State (from Firebase) --
   const [itineraryList, setItineraryList] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [checklist, setChecklist] = useState([]);
   const [liveCams, setLiveCams] = useState([]);
-
-  // Modals
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [currentEvent, setCurrentEvent] = useState({ 
-    id: null, time: '', title: '', type: 'sightseeing', duration: '', desc: '', badge: '' 
-  });
-  
+  const [currentEvent, setCurrentEvent] = useState({ id: null, time: '', title: '', type: 'sightseeing', duration: '', desc: '', badge: '' });
   const [isCamModalOpen, setIsCamModalOpen] = useState(false);
   const [currentCam, setCurrentCam] = useState({ id: null, title: '', location: '', url: '' });
-
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [newExpense, setNewExpense] = useState({ title: '', amount: '', currency: 'JPY', category: '食物' });
-
-  // Checklist Inputs
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('隨身行李');
 
-  // -- 1. Authentication & Initialization --
   useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
+    const initAuth = async () => { await signInAnonymously(auth); };
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
-  // -- 2. Data Fetching (Listeners) --
   useEffect(() => {
     if (!user) return;
-
-    // Itinerary Listener
     const unsubItinerary = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'itinerary'), (snapshot) => {
-      const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setItineraryList(events);
-    }, (error) => console.error("Itinerary sync error:", error));
-
-    // Expenses Listener
+      setItineraryList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
     const unsubExpenses = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'expenses'), (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setExpenses(list.sort((a,b) => b.createdAt - a.createdAt));
-    }, (error) => console.error("Expenses sync error:", error));
-
-    // Checklist Listener
+      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => b.createdAt - a.createdAt));
+    });
     const unsubChecklist = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'checklist'), (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setChecklist(list);
-    }, (error) => console.error("Checklist sync error:", error));
-
-    // LiveCams Listener
+      setChecklist(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
     const unsubLiveCams = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'liveCams'), (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setLiveCams(list);
-    }, (error) => console.error("LiveCams sync error:", error));
-
-    return () => {
-      unsubItinerary();
-      unsubExpenses();
-      unsubChecklist();
-      unsubLiveCams();
-    };
+      setLiveCams(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => { unsubItinerary(); unsubExpenses(); unsubChecklist(); unsubLiveCams(); };
   }, [user]);
 
   // -- Auto Seed Check --
@@ -525,79 +286,44 @@ export default function App() {
         try {
             const itinRef = collection(db, 'artifacts', appId, 'public', 'data', 'itinerary');
             const itinSnap = await getDocs(query(itinRef, limit(1)));
-            if (itinSnap.empty) {
-                for (const item of SEED_ITINERARY) { await addDoc(itinRef, { ...item, createdAt: Date.now() }); }
-            }
+            if (itinSnap.empty) for (const item of SEED_ITINERARY) await addDoc(itinRef, { ...item, createdAt: Date.now() });
 
             const expRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
             const expSnap = await getDocs(query(expRef, limit(1)));
-            if (expSnap.empty) {
-                for (const item of SEED_EXPENSES) { await addDoc(expRef, { ...item, createdAt: Date.now() }); }
-            }
+            if (expSnap.empty) for (const item of SEED_EXPENSES) await addDoc(expRef, { ...item, createdAt: Date.now() });
             
             const checkRef = collection(db, 'artifacts', appId, 'public', 'data', 'checklist');
             const checkSnap = await getDocs(query(checkRef, limit(1)));
-            if (checkSnap.empty) {
-                for (const item of SEED_CHECKLIST) { await addDoc(checkRef, { ...item, createdAt: Date.now() }); }
-            }
+            if (checkSnap.empty) for (const item of SEED_CHECKLIST) await addDoc(checkRef, { ...item, createdAt: Date.now() });
 
             const camRef = collection(db, 'artifacts', appId, 'public', 'data', 'liveCams');
             const camSnap = await getDocs(query(camRef, limit(1)));
-            if (camSnap.empty) {
-                for (const item of SEED_LIVECAMS) { await addDoc(camRef, { ...item, createdAt: Date.now() }); }
-            }
-
-        } catch (e) {
-            console.error("Auto seed error:", e);
-        }
+            if (camSnap.empty) for (const item of SEED_LIVECAMS) await addDoc(camRef, { ...item, createdAt: Date.now() });
+        } catch (e) { console.error("Auto seed error:", e); }
     };
     autoSeed();
   }, [user]);
 
-  // -- 3. Weather Fetching --
   useEffect(() => {
     if (useRealTimeWeather && realTimeWeather.length === 0) {
-      fetch(JMA_FORECAST_URL)
-        .then(res => res.json())
-        .then(data => {
-          // Parse JMA structure (Sapporo/Ishikari area)
+      fetch(JMA_FORECAST_URL).then(res => res.json()).then(data => {
           const timeSeries = data[0].timeSeries[0];
           const dates = timeSeries.timeDefines;
           const weatherCodes = timeSeries.areas[0].weatherCodes;
-          // Temperature data usually in timeSeries[2]
           const tempTimeSeries = data[0].timeSeries[2];
           const temps = tempTimeSeries ? tempTimeSeries.areas[0].temps : []; 
-          
           const mappedData = dates.map((dateStr, index) => {
             const dateObj = new Date(dateStr);
             const formattedDate = `${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')}`;
-            
-            // Try to find min/max temps if available (structure varies)
-            // Simplifying: just taking first avail temp as reference if array aligns
-            const tempVal = temps[index] || temps[index*2] || '-'; // rough approx for display
-
-            return {
-              date: formattedDate,
-              temp: `${tempVal}°C`, // Simplified, JMA JSON is complex
-              icon: getJmaWeatherIcon(weatherCodes[index]),
-              status: getJmaWeatherStatus(weatherCodes[index])
-            };
+            const tempVal = temps[index] || temps[index*2] || '-'; 
+            return { date: formattedDate, temp: `${tempVal}°C`, icon: getJmaWeatherIcon(weatherCodes[index]), status: getJmaWeatherStatus(weatherCodes[index]) };
           });
-          
-          // Filter out duplicates
-          const uniqueData = mappedData.filter((item, index, self) => 
-            index === self.findIndex((t) => (
-              t.date === item.date
-            ))
-          );
-          
+          const uniqueData = mappedData.filter((item, index, self) => index === self.findIndex((t) => (t.date === item.date)));
           setRealTimeWeather(uniqueData);
-        })
-        .catch(err => console.error("JMA fetch error", err));
+        }).catch(err => console.error("JMA fetch error", err));
     }
   }, [useRealTimeWeather]);
 
-  // -- Computed Data --
   const itineraryByDay = useMemo(() => {
     const grouped = {};
     itineraryList.forEach(event => {
@@ -605,9 +331,7 @@ export default function App() {
       if (!grouped[day]) grouped[day] = [];
       grouped[day].push(event);
     });
-    Object.keys(grouped).forEach(day => {
-      grouped[day].sort((a, b) => a.time.localeCompare(b.time));
-    });
+    Object.keys(grouped).forEach(day => { grouped[day].sort((a, b) => a.time.localeCompare(b.time)); });
     return grouped;
   }, [itineraryList]);
 
@@ -619,7 +343,6 @@ export default function App() {
     }, 0).toFixed(0);
   }, [expenses]);
 
-  // -- Helpers --
   const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -627,7 +350,6 @@ export default function App() {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  // -- Seeding Data --
   const seedData = async () => {
     if (!user) return;
     try {
@@ -639,10 +361,10 @@ export default function App() {
       for (const item of SEED_CHECKLIST) { await addDoc(checkCol, { ...item, createdAt: Date.now() }); }
       const camCol = collection(db, 'artifacts', appId, 'public', 'data', 'liveCams');
       for (const item of SEED_LIVECAMS) { await addDoc(camCol, { ...item, createdAt: Date.now() }); }
-    } catch (e) { console.error("Seeding error", e); }
+      alert("載入成功！請重新整理頁面以查看更新。");
+    } catch (e) { console.error("Seeding error", e); alert("載入失敗：" + e.message); }
   };
 
-  // -- Actions Handlers --
   const handleCopyLink = () => {
     const link = window.location.href;
     const dummy = document.createElement("textarea");
@@ -651,7 +373,6 @@ export default function App() {
     dummy.select();
     document.execCommand("copy");
     document.body.removeChild(dummy);
-    // Visual feedback usually in modal, can add simple alert or just rely on text change
   };
 
   const handleBannerUpload = (e) => {
@@ -666,14 +387,12 @@ export default function App() {
     e.preventDefault();
     setCustomBanners(prev => { const newState = { ...prev }; delete newState[activeDay]; return newState; });
   };
-
   const handleAddExpense = async () => {
     if (!newExpense.title || !newExpense.amount || !user) return;
     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'expenses'), { ...newExpense, date: '今天', createdAt: Date.now() });
     setNewExpense({ title: '', amount: '', currency: 'JPY', category: '食物' });
     setIsExpenseModalOpen(false);
   };
-
   const handleSaveCam = async () => {
     if (!currentCam.title || !user) return;
     const col = collection(db, 'artifacts', appId, 'public', 'data', 'liveCams');
@@ -685,24 +404,20 @@ export default function App() {
     }
     setIsCamModalOpen(false);
   };
-
   const handleDeleteCam = async () => {
     if(!currentCam.id || !user) return;
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'liveCams', currentCam.id));
     setIsCamModalOpen(false);
   };
-
   const toggleChecklist = async (id, currentVal) => {
     if(!user) return;
     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'checklist', id), { checked: !currentVal });
   };
-
   const updateQty = async (id, currentQty, delta) => {
     if(!user) return;
     const newQty = Math.max(1, currentQty + delta);
     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'checklist', id), { qty: newQty });
   };
-
   const handleAddChecklistItem = async () => {
     if (!newItemName.trim() || !user) return;
     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'checklist'), {
@@ -710,12 +425,10 @@ export default function App() {
     });
     setNewItemName('');
   };
-
   const handleDeleteChecklistItem = async (id) => {
     if(!user) return;
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'checklist', id));
   };
-
   const handleSaveEvent = async () => {
     if (!currentEvent.title || !user) return;
     const col = collection(db, 'artifacts', appId, 'public', 'data', 'itinerary');
@@ -727,25 +440,21 @@ export default function App() {
     }
     setIsEventModalOpen(false);
   };
-
   const handleDeleteEvent = async () => {
     if (!currentEvent.id || !user) return;
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'itinerary', currentEvent.id));
     setIsEventModalOpen(false);
   };
-
   const handleHeaderIconClick = () => {
     const types = ['chiikawa', 'hachiware', 'usagi', 'snowman'];
     const nextIndex = (types.indexOf(headerIconType) + 1) % types.length;
     setHeaderIconType(types[nextIndex]);
   };
-
   const openEventModal = (event = null) => {
     if (event) { setCurrentEvent(event); } 
     else { setCurrentEvent({ id: null, time: '09:00', title: '', type: 'sightseeing', duration: '1小時', desc: '', badge: '' }); }
     setIsEventModalOpen(true);
   };
-
   const openCamModal = (cam = null) => {
     if (cam) { setCurrentCam(cam); } 
     else { setCurrentCam({ id: null, title: '', location: '', url: '' }); }
@@ -753,12 +462,13 @@ export default function App() {
   };
 
   const displayWeatherData = useRealTimeWeather ? realTimeWeather : MOCK_WEATHER_DATA;
-
   const isBlobUrl = window.location.protocol === 'blob:';
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden relative">
+    <div className="flex justify-center min-h-screen bg-gray-100">
       <GlobalStyle />
+      {/* Mobile Wrapper */}
+      <div className="w-full max-w-md bg-slate-50 h-screen flex flex-col font-sans text-slate-800 overflow-hidden relative shadow-2xl">
       <SnowBackground />
       
       {/* 1. HEADER */}
@@ -795,7 +505,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Date Navigation (Only visible on relevant tabs) */}
         {activeTab === 'itinerary' && (
           <div className="flex overflow-x-auto pb-2 scrollbar-hide gap-2 -mx-4 px-4 snap-x">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((day) => (
@@ -1574,7 +1283,7 @@ export default function App() {
           </div>
         </div>
       )}
-
+      </div>
     </div>
   );
 }
